@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LMA Chat – Rencontres Afrique & Europe</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#faf7ff;--card:#fff;--tx:#1d1433;--mut:#6b6285;--ac:#7b2ff7;--ac2:#f107a3;--bd:#e5dcf5}
+@media (prefers-color-scheme:dark){:root{--bg:#140d24;--card:#21163a;--tx:#f4efff;--mut:#b3a6d4;--ac:#a66bff;--ac2:#ff4fb8;--bd:#3a2c5c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.w{max-width:480px;margin:0 auto;padding:20px 18px 40px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.3rem;color:var(--ac)}
+.lang button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 12px;border-radius:99px;font-size:.85rem;cursor:pointer}
+.lang button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+h1{font-size:1.9rem;line-height:1.15;margin:26px 0 8px}
+p.sub{color:var(--mut);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px}
+.tabs{display:flex;gap:8px;margin-bottom:6px}
+.tabs button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem;cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+label{display:block;font-size:.85rem;color:var(--mut);margin:12px 0 4px}
+input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button.go{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:linear-gradient(90deg,var(--ac),var(--ac2));color:#fff;font-size:1.05rem;font-weight:700;cursor:pointer}
+button.go:disabled{opacity:.6}
+button.out{margin-top:16px;padding:10px 16px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem;cursor:pointer}
+.msg{margin-top:12px;font-size:.95rem}
+.ok{color:#2e8b57}.er{color:#d33}
+.hide{display:none}
+footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="top">
+    <div class="logo"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b2ff7"/><stop offset="1" stop-color="#f107a3"/></linearGradient></defs><path d="M16 3C8.8 3 3 8 3 14.2c0 3.5 1.9 6.6 4.9 8.6L7 29l6-3.2c1 .2 2 .3 3 .3 7.2 0 13-5 13-11.2S23.2 3 16 3z" fill="url(#g)"/><path d="M16 20.5l-4.6-4.5a3.2 3.2 0 014.6-4.5 3.2 3.2 0 014.6 4.5z" fill="#fff"/></svg>LMA Chat</div>
+    <div class="lang"><button id="bfr" onclick="setL('fr')">FR</button> <button id="ben" onclick="setL('en')">EN</button></div>
+  </div>
+
+  <div id="viewAuth">
+    <h1 id="t1"></h1>
+    <p class="sub" id="t2"></p>
+    <div class="card">
+      <div class="tabs"><button id="tabUp" onclick="setTab('up')"></button><button id="tabIn" onclick="setTab('in')"></button></div>
+      <div id="fName"><label id="lName" for="name"></label><input id="name" autocomplete="nickname" maxlength="40"></div>
+      <label id="lEmail" for="email"></label><input id="email" type="email" inputmode="email" autocomplete="email">
+      <label id="lPass" for="pass"></label><input id="pass" type="password" autocomplete="current-password" minlength="8">
+      <div id="fUp">
+        <label id="lBirth" for="birth"></label><input id="birth" type="date">
+        <label id="lCountry" for="country"></label><select id="country"></select>
+      </div>
+      <button class="go" id="send" onclick="submitF()"></button>
+      <div class="msg" id="msg" role="status"></div>
+    </div>
+  </div>
+
+  <div id="viewHome" class="hide">
+    <h1 id="hello"></h1>
+    <p class="sub" id="hsub"></p>
+    <button class="out" id="logout" onclick="logout()"></button>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+var SB_URL='https://ndwldtmkhxlgvvpeiuui.supabase.co';
+var SB_KEY='sb_publishable_IxOMKArEFDsrbDEbZwRRYA_rtv0CZ3Q';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+var L=(navigator.language||'fr').slice(0,2)==='en'?'en':'fr',tab='up',user=null;
+var C=['Sénégal','Côte d’Ivoire','Cameroun','Mali','Guinée','Bénin','Togo','Burkina Faso','RD Congo','Congo','Gabon','Maroc','Algérie','Tunisie','Nigeria','Ghana','Kenya','France','Belgique','Suisse','Royaume-Uni','Allemagne','Canada','Autre'];
+var CE=['Senegal','Ivory Coast','Cameroon','Mali','Guinea','Benin','Togo','Burkina Faso','DR Congo','Congo','Gabon','Morocco','Algeria','Tunisia','Nigeria','Ghana','Kenya','France','Belgium','Switzerland','United Kingdom','Germany','Canada','Other'];
+var T={
+fr:{t1:'Rejoignez LMA Chat',t2:'Une communauté de rencontres sérieuse et sécurisée, d’Afrique à l’Europe.',up:'Créer un compte',inn:'Se connecter',
+name:'Prénom ou pseudo',email:'Adresse e-mail',pass:'Mot de passe (8 caractères minimum)',birth:'Date de naissance',country:'Pays',
+sendUp:'Créer mon compte',sendIn:'Me connecter',
+young:'Vous devez avoir 18 ans ou plus.',fill:'Remplissez tous les champs. Le mot de passe doit avoir 8 caractères minimum.',
+check:'Compte créé. Ouvrez votre boîte mail et appuyez sur le lien de confirmation, puis connectez-vous.',
+badLogin:'E-mail ou mot de passe incorrect, ou e-mail non confirmé.',err:'Une erreur est survenue. Réessayez dans un instant.',
+hello:'Bienvenue',hsub:'Votre compte est actif. Les profils et la messagerie arrivent bientôt.',out:'Se déconnecter',
+foot:'Réservé aux adultes (18+). Vos données restent confidentielles.'},
+en:{t1:'Join LMA Chat',t2:'A serious, secure dating community from Africa to Europe.',up:'Create account',inn:'Log in',
+name:'First name or nickname',email:'Email address',pass:'Password (8 characters minimum)',birth:'Date of birth',country:'Country',
+sendUp:'Create my account',sendIn:'Log in',
+young:'You must be 18 or older.',fill:'Fill in all fields. The password needs at least 8 characters.',
+check:'Account created. Open your inbox, tap the confirmation link, then log in.',
+badLogin:'Wrong email or password, or email not confirmed.',err:'Something went wrong. Please try again shortly.',
+hello:'Welcome',hsub:'Your account is active. Profiles and messaging are coming soon.',out:'Log out',
+foot:'Adults only (18+). Your data stays private.'}};
+function $(i){return document.getElementById(i)}
+function msg(t,c){$('msg').textContent=t;$('msg').className='msg '+(c||'')}
+function render(){
+  var d=T[L];document.documentElement.lang=L;
+  $('t1').textContent=d.t1;$('t2').textContent=d.t2;
+  $('tabUp').textContent=d.up;$('tabIn').textContent=d.inn;
+  $('lName').textContent=d.name;$('lEmail').textContent=d.email;$('lPass').textContent=d.pass;
+  $('lBirth').textContent=d.birth;$('lCountry').textContent=d.country;
+  $('send').textContent=tab==='up'?d.sendUp:d.sendIn;
+  $('logout').textContent=d.out;$('foot').textContent=d.foot;
+  var cur=$('country').selectedIndex;if(cur<0)cur=0;
+  var list=L==='fr'?C:CE;$('country').textContent='';
+  list.forEach(function(c,i){var o=document.createElement('option');o.value=C[i];o.textContent=c;$('country').appendChild(o)});
+  $('country').selectedIndex=cur;
+  $('bfr').className=L==='fr'?'on':'';$('ben').className=L==='en'?'on':'';
+  $('tabUp').className=tab==='up'?'on':'';$('tabIn').className=tab==='in'?'on':'';
+  $('fName').className=tab==='up'?'':'hide';$('fUp').className=tab==='up'?'':'hide';
+  $('pass').autocomplete=tab==='up'?'new-password':'current-password';
+  var meta=user&&user.user_metadata||{};
+  $('hello').textContent=d.hello+(meta.display_name?', '+meta.display_name:'')+' !';
+  $('hsub').textContent=d.hsub;
+  $('viewAuth').className=user?'hide':'';$('viewHome').className=user?'':'hide';
+}
+function setL(x){L=x;render()}
+function setTab(x){tab=x;msg('');render()}
+function age(s){var b=new Date(s),n=new Date(),a=n.getFullYear()-b.getFullYear(),m=n.getMonth()-b.getMonth();if(m<0||(m===0&&n.getDate()<b.getDate()))a--;return a}
+async function submitF(){
+  var d=T[L],em=$('email').value.trim(),pw=$('pass').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)||pw.length<8){msg(d.fill,'er');return}
+  $('send').disabled=true;msg('');
+  try{
+    if(tab==='up'){
+      var nm=$('name').value.trim(),bd=$('birth').value;
+      if(!nm||!bd){msg(d.fill,'er');return}
+      if(isNaN(age(bd))||age(bd)<18){msg(d.young,'er');return}
+      var r=await sb.auth.signUp({email:em,password:pw,options:{data:{display_name:nm,country:$('country').value,lang:L,over_18:true}}});
+      if(r.error){msg(d.err,'er');return}
+      if(r.data.session){return}
+      msg(d.check,'ok');
+    }else{
+      var r2=await sb.auth.signInWithPassword({email:em,password:pw});
+      if(r2.error){msg(d.badLogin,'er');return}
+    }
+  }catch(e){msg(d.err,'er')}
+  finally{$('send').disabled=false}
+}
+async function logout(){await sb.auth.signOut()}
+sb.auth.onAuthStateChange(function(ev,session){user=session?session.user:null;render()});
+sb.auth.getSession().then(function(r){user=r.data.session?r.data.session.user:null;render()});
+render();
+</script>
+</body>
+</html>
