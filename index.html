@@ -32,6 +32,12 @@ button.out{margin-top:16px;padding:10px 16px;border-radius:12px;border:1px solid
 .hide{display:none}
 textarea{resize:vertical;font-family:inherit}
 .m{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-top:10px}.m b{display:block}.m span{color:var(--mut);font-size:.9rem}.m p{margin:6px 0 0;overflow-wrap:anywhere}
+#thread{display:flex;flex-direction:column;max-height:50vh;overflow-y:auto;margin:10px 0}
+.bub{max-width:85%;padding:10px 12px;border-radius:14px;margin:5px 0;overflow-wrap:anywhere;white-space:pre-wrap}
+.mine{align-self:flex-end;background:linear-gradient(90deg,var(--ac),var(--ac2));color:#fff}
+.theirs{align-self:flex-start;background:var(--card);border:1px solid var(--bd)}
+.rule{font-size:.85rem;color:var(--mut);margin:6px 0 0}
+h2{font-size:1.2rem;margin:14px 0 4px}
 footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
 </style>
 </head>
@@ -62,7 +68,7 @@ footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
   <div id="viewHome" class="hide">
     <h1 id="hello"></h1>
     <p class="sub" id="hsub"></p>
-    <div class="tabs"><button id="tabMem" onclick="setHome('mem')"></button><button id="tabMe" onclick="setHome('me')"></button></div>
+    <div class="tabs"><button id="tabMem" onclick="setHome('mem')"></button><button id="tabMsg" onclick="setHome('msg')"></button><button id="tabMe" onclick="setHome('me')"></button></div>
     <div id="secMe" class="card hide">
       <label id="pName" for="pn"></label><input id="pn" maxlength="40">
       <label id="pAge" for="pa"></label><input id="pa" type="number" inputmode="numeric" min="18" max="99">
@@ -73,6 +79,18 @@ footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
       <div class="msg" id="pmsg" role="status"></div>
     </div>
     <div id="secMem"><div id="list"></div></div>
+    <div id="secMsg" class="hide">
+      <div id="convs"></div>
+      <div id="chat" class="hide">
+        <button class="out" id="back" onclick="closeChat()"></button>
+        <h2 id="chatName"></h2>
+        <p class="rule" id="rule"></p>
+        <div id="thread"></div>
+        <textarea id="mb" maxlength="1000" rows="2"></textarea>
+        <button class="go" id="mSend" onclick="sendM()"></button>
+        <div class="msg" id="mmsg" role="status"></div>
+      </div>
+    </div>
     <button class="out" id="logout" onclick="logout()"></button>
   </div>
 
@@ -83,7 +101,7 @@ footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
 var SB_URL='https://ndwldtmkhxlgvvpeiuui.supabase.co';
 var SB_KEY='sb_publishable_IxOMKArEFDsrbDEbZwRRYA_rtv0CZ3Q';
 var sb=supabase.createClient(SB_URL,SB_KEY);
-var homeTab='mem',prof=null,members=[],lastId=null;
+var homeTab='mem',prof=null,members=[],lastId=null,chatWith=null,convs=[],thread=[],chan=null;
 var L=(navigator.language||'fr').slice(0,2)==='en'?'en':'fr',tab='up',user=null;
 var C=['Sénégal','Côte d’Ivoire','Cameroun','Mali','Guinée','Bénin','Togo','Burkina Faso','RD Congo','Congo','Gabon','Maroc','Algérie','Tunisie','Nigeria','Ghana','Kenya','France','Belgique','Suisse','Royaume-Uni','Allemagne','Canada','Autre'];
 var CE=['Senegal','Ivory Coast','Cameroon','Mali','Guinea','Benin','Togo','Burkina Faso','DR Congo','Congo','Gabon','Morocco','Algeria','Tunisia','Nigeria','Ghana','Kenya','France','Belgium','Switzerland','United Kingdom','Germany','Canada','Other'];
@@ -94,7 +112,7 @@ sendUp:'Créer mon compte',sendIn:'Me connecter',
 young:'Vous devez avoir 18 ans ou plus.',fill:'Remplissez tous les champs. Le mot de passe doit avoir 8 caractères minimum.',
 check:'Compte créé. Ouvrez votre boîte mail et appuyez sur le lien de confirmation, puis connectez-vous.',
 badLogin:'E-mail ou mot de passe incorrect, ou e-mail non confirmé.',err:'Une erreur est survenue. Réessayez dans un instant.',
-hello:'Bienvenue',complete:'Complétez votre profil pour découvrir les membres.',tMem:'Membres',tMe:'Mon profil',pName:'Prénom ou pseudo',pAge:'Âge',pCity:'Ville',pCountry:'Pays',pBio:'Présentation (300 caractères maximum)',pSave:'Enregistrer mon profil',psaved:'Profil enregistré.',pfill:'Indiquez un prénom et un âge entre 18 et 99.',none:'Aucun autre membre pour l’instant. Vous êtes parmi les premiers.',yrs:'ans',out:'Se déconnecter',
+hello:'Bienvenue',complete:'Complétez votre profil pour découvrir les membres.',tMem:'Membres',tMe:'Mon profil',pName:'Prénom ou pseudo',pAge:'Âge',pCity:'Ville',pCountry:'Pays',pBio:'Présentation (300 caractères maximum)',pSave:'Enregistrer mon profil',psaved:'Profil enregistré.',pfill:'Indiquez un prénom et un âge entre 18 et 99.',none:'Aucun autre membre pour l’instant. Vous êtes parmi les premiers.',yrs:'ans',tMsg:'Messages',write:'Écrire',open:'Ouvrir',back:'Retour',mSend:'Envoyer',ph:'Votre message…',you:'Vous',noConv:'Aucune conversation. Écrivez à un membre depuis l’onglet Membres.',rule:'Pour votre sécurité : ne partagez jamais de numéro, de carte bancaire ni d’argent.',blocked:'Message refusé : il est interdit de partager des numéros de téléphone, des liens, des réseaux sociaux (WhatsApp, etc.) ou des informations bancaires.',out:'Se déconnecter',
 foot:'Réservé aux adultes (18+). Vos données restent confidentielles.'},
 en:{t1:'Join LMA Chat',t2:'A serious, secure dating community from Africa to Europe.',up:'Create account',inn:'Log in',
 name:'First name or nickname',email:'Email address',pass:'Password (8 characters minimum)',birth:'Date of birth',country:'Country',
@@ -102,7 +120,7 @@ sendUp:'Create my account',sendIn:'Log in',
 young:'You must be 18 or older.',fill:'Fill in all fields. The password needs at least 8 characters.',
 check:'Account created. Open your inbox, tap the confirmation link, then log in.',
 badLogin:'Wrong email or password, or email not confirmed.',err:'Something went wrong. Please try again shortly.',
-hello:'Welcome',complete:'Complete your profile to discover members.',tMem:'Members',tMe:'My profile',pName:'First name or nickname',pAge:'Age',pCity:'City',pCountry:'Country',pBio:'About you (300 characters max)',pSave:'Save my profile',psaved:'Profile saved.',pfill:'Enter a name and an age between 18 and 99.',none:'No other members yet. You are among the first.',yrs:'years old',out:'Log out',
+hello:'Welcome',complete:'Complete your profile to discover members.',tMem:'Members',tMe:'My profile',pName:'First name or nickname',pAge:'Age',pCity:'City',pCountry:'Country',pBio:'About you (300 characters max)',pSave:'Save my profile',psaved:'Profile saved.',pfill:'Enter a name and an age between 18 and 99.',none:'No other members yet. You are among the first.',yrs:'years old',tMsg:'Messages',write:'Message',open:'Open',back:'Back',mSend:'Send',ph:'Your message…',you:'You',noConv:'No conversations yet. Write to a member from the Members tab.',rule:'For your safety: never share a phone number, a bank card or money.',blocked:'Message refused: sharing phone numbers, links, social apps (WhatsApp, etc.) or banking details is not allowed.',out:'Log out',
 foot:'Adults only (18+). Your data stays private.'}};
 function $(i){return document.getElementById(i)}
 function fillC(id,idx){var list=L==='fr'?C:CE,el=$(id);el.textContent='';list.forEach(function(c,i){var o=document.createElement('option');o.value=C[i];o.textContent=c;el.appendChild(o)});el.selectedIndex=idx}
@@ -130,7 +148,7 @@ function render(){
   $('pName').textContent=d.pName;$('pAge').textContent=d.pAge;$('pCity').textContent=d.pCity;$('pCountry').textContent=d.pCountry;$('pBio').textContent=d.pBio;$('pSave').textContent=d.pSave;
   $('tabMem').className=homeTab==='mem'?'on':'';$('tabMe').className=homeTab==='me'?'on':'';
   $('secMe').className='card'+(homeTab==='me'?'':' hide');$('secMem').className=homeTab==='mem'?'':'hide';
-  renderList();
+  renderList();renderMsg();
   $('viewAuth').className=user?'hide':'';$('viewHome').className=user?'':'hide';
 }
 function renderList(){
@@ -142,10 +160,11 @@ function renderList(){
     var i=C.indexOf(m.country),pl=[m.city,i>=0?names[i]:m.country].filter(Boolean).join(', ');
     var sp=document.createElement('span');sp.textContent=m.age+' '+d.yrs+(pl?' – '+pl:'');c.appendChild(sp);
     if(m.bio){var p=document.createElement('p');p.textContent=m.bio;c.appendChild(p)}
+    var bt=document.createElement('button');bt.className='out';bt.textContent=d.write;bt.onclick=function(){openChat(m)};c.appendChild(bt);
     box.appendChild(c);
   });
 }
-function setHome(x){if(x==='mem'&&!prof){render();return}homeTab=x;pmsg('');render()}
+function setHome(x){if((x==='mem'||x==='msg')&&!prof){render();return}homeTab=x;pmsg('');if(x==='msg'){loadConvs().then(render)}render()}
 function fillForm(){
   var meta=user&&user.user_metadata||{};
   $('pn').value=prof?prof.display_name:(meta.display_name||'');
@@ -160,7 +179,7 @@ async function loadHome(){
   try{
     var r=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
     prof=r.data||null;homeTab=prof?'mem':'me';fillForm();
-    if(prof)await loadMembers();
+    if(prof){await loadMembers();await loadConvs();subscribe()}
   }catch(e){}
   render();
 }
@@ -171,9 +190,82 @@ async function saveP(){
   var row={id:user.id,display_name:n,age:a,city:$('pc').value.trim()||null,country:$('pco').value,bio:$('pb').value.trim()||null,updated_at:new Date().toISOString()};
   try{
     var r=await sb.from('profiles').upsert(row);
-    if(r.error){pmsg(d.err,'er')}else{prof=row;pmsg(d.psaved,'ok');await loadMembers();render()}
+    if(r.error){pmsg(d.err,'er')}else{prof=row;pmsg(d.psaved,'ok');await loadMembers();subscribe();render()}
   }catch(e){pmsg(d.err,'er')}
   finally{$('pSave').disabled=false}
+}
+function blocked(t){
+  var l=t.toLowerCase(),c=l.replace(/[^0-9a-z]/g,'');
+  if(/[0-9]{8,}/.test(c))return true;
+  if(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/.test(l))return true;
+  if(/https?:\/\/|www\.|\.(com|net|org|io)\b/.test(l))return true;
+  if(/\b(whats?app|watsap|whatsap|telegram|viber|wechat|snapchat|snap|insta|skype|instagram|facebook|tiktok|iban|paypal|western union|orange money|mtn money|moov money|mobile money|carte bancaire|carte bleue|bitcoin|crypto|cvv)\b/.test(l))return true;
+  if(/(whatsapp|whatsap|watsap|telegram|snapchat|instagram|facebook|tiktok|westernunion|orangemoney|paypal|bitcoin|wechat|viber)/.test(l.replace(/[^a-z]/g,'')))return true;
+  return false;
+}
+function mmsg(t,c){$('mmsg').textContent=t;$('mmsg').className='msg '+(c||'')}
+async function loadConvs(){
+  try{
+    var r=await sb.from('messages').select('sender_id,recipient_id,body,created_at').order('created_at',{ascending:false}).limit(200);
+    var rows=r.data||[],seen={},ids=[],last={};
+    rows.forEach(function(m){var o=m.sender_id===user.id?m.recipient_id:m.sender_id;if(!seen[o]){seen[o]=1;ids.push(o);last[o]=m}});
+    var p=[];if(ids.length){p=(await sb.from('profiles').select('id,display_name').in('id',ids)).data||[]}
+    var nm={};p.forEach(function(x){nm[x.id]=x.display_name});
+    convs=ids.map(function(id){return {id:id,name:nm[id]||'?',body:last[id].body,mine:last[id].sender_id===user.id}});
+  }catch(e){}
+}
+function renderMsg(){
+  var d=T[L];
+  $('tabMsg').textContent=d.tMsg;$('tabMsg').className=homeTab==='msg'?'on':'';
+  $('secMsg').className=homeTab==='msg'?'':'hide';
+  $('mSend').textContent=d.mSend;$('back').textContent=d.back;$('mb').placeholder=d.ph;$('rule').textContent=d.rule;
+  $('chat').className=chatWith?'':'hide';$('convs').className=chatWith?'hide':'';
+  if(chatWith)$('chatName').textContent=chatWith.name;
+  var box=$('convs');box.textContent='';
+  if(chatWith)return;
+  if(!convs.length){var p=document.createElement('p');p.className='sub';p.textContent=d.noConv;box.appendChild(p)}
+  convs.forEach(function(c){
+    var el=document.createElement('div');el.className='m';
+    var b=document.createElement('b');b.textContent=c.name;el.appendChild(b);
+    var sp=document.createElement('span');sp.textContent=(c.mine?d.you+' : ':'')+c.body;el.appendChild(sp);
+    var bt=document.createElement('button');bt.className='out';bt.textContent=d.open;bt.onclick=function(){openChat(c)};el.appendChild(bt);
+    box.appendChild(el);
+  });
+}
+function renderThread(){
+  var box=$('thread');box.textContent='';
+  thread.forEach(function(m){var el=document.createElement('div');el.className='bub '+(m.sender_id===user.id?'mine':'theirs');el.textContent=m.body;box.appendChild(el)});
+  box.scrollTop=box.scrollHeight;
+}
+async function loadThread(){
+  if(!chatWith)return;
+  var a=user.id,b=chatWith.id;
+  try{
+    var r=await sb.from('messages').select('id,sender_id,body,created_at').or('and(sender_id.eq.'+a+',recipient_id.eq.'+b+'),and(sender_id.eq.'+b+',recipient_id.eq.'+a+')').order('created_at',{ascending:true}).limit(200);
+    thread=r.data||[];renderThread();
+  }catch(e){}
+}
+function openChat(p){chatWith={id:p.id,name:p.display_name||p.name};thread=[];homeTab='msg';mmsg('');render();loadThread()}
+function closeChat(){chatWith=null;thread=[];render();loadConvs().then(render)}
+async function sendM(){
+  var d=T[L],t=$('mb').value.trim();
+  if(!t||!chatWith)return;
+  if(blocked(t)){mmsg(d.blocked,'er');return}
+  $('mSend').disabled=true;
+  try{
+    var r=await sb.from('messages').insert({recipient_id:chatWith.id,body:t});
+    if(r.error){mmsg(String(r.error.message).indexOf('contact_info_blocked')>=0?d.blocked:d.err,'er')}
+    else{$('mb').value='';mmsg('');await loadThread()}
+  }catch(e){mmsg(d.err,'er')}
+  finally{$('mSend').disabled=false}
+}
+function subscribe(){
+  if(!user)return;
+  if(chan){sb.removeChannel(chan);chan=null}
+  chan=sb.channel('inbox').on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'recipient_id=eq.'+user.id},function(){
+    if(chatWith)loadThread();
+    loadConvs().then(render);
+  }).subscribe();
 }
 function setL(x){L=x;render()}
 function setTab(x){tab=x;msg('');render()}
@@ -199,7 +291,7 @@ async function submitF(){
   finally{$('send').disabled=false}
 }
 async function logout(){await sb.auth.signOut()}
-function setUser(u){user=u;var id=u?u.id:null;if(id!==lastId){lastId=id;prof=null;members=[];if(u)loadHome()}render()}
+function setUser(u){user=u;var id=u?u.id:null;if(id!==lastId){lastId=id;prof=null;members=[];if(!u){if(chan){sb.removeChannel(chan);chan=null}chatWith=null;convs=[];thread=[]}if(u)loadHome()}render()}
 sb.auth.onAuthStateChange(function(ev,session){setUser(session?session.user:null)});
 sb.auth.getSession().then(function(r){setUser(r.data.session?r.data.session.user:null)});
 render();
