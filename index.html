@@ -22,14 +22,16 @@ p.sub{color:var(--mut);margin:0 0 20px}
 .tabs button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem;cursor:pointer}
 .tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 label{display:block;font-size:.85rem;color:var(--mut);margin:12px 0 4px}
-input,select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem}
-input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+input,select,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 button.go{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:linear-gradient(90deg,var(--ac),var(--ac2));color:#fff;font-size:1.05rem;font-weight:700;cursor:pointer}
 button.go:disabled{opacity:.6}
 button.out{margin-top:16px;padding:10px 16px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:1rem;cursor:pointer}
 .msg{margin-top:12px;font-size:.95rem}
 .ok{color:#2e8b57}.er{color:#d33}
 .hide{display:none}
+textarea{resize:vertical;font-family:inherit}
+.m{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-top:10px}.m b{display:block}.m span{color:var(--mut);font-size:.9rem}.m p{margin:6px 0 0;overflow-wrap:anywhere}
 footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
 </style>
 </head>
@@ -60,6 +62,17 @@ footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
   <div id="viewHome" class="hide">
     <h1 id="hello"></h1>
     <p class="sub" id="hsub"></p>
+    <div class="tabs"><button id="tabMem" onclick="setHome('mem')"></button><button id="tabMe" onclick="setHome('me')"></button></div>
+    <div id="secMe" class="card hide">
+      <label id="pName" for="pn"></label><input id="pn" maxlength="40">
+      <label id="pAge" for="pa"></label><input id="pa" type="number" inputmode="numeric" min="18" max="99">
+      <label id="pCity" for="pc"></label><input id="pc" maxlength="60">
+      <label id="pCountry" for="pco"></label><select id="pco"></select>
+      <label id="pBio" for="pb"></label><textarea id="pb" maxlength="300" rows="4"></textarea>
+      <button class="go" id="pSave" onclick="saveP()"></button>
+      <div class="msg" id="pmsg" role="status"></div>
+    </div>
+    <div id="secMem"><div id="list"></div></div>
     <button class="out" id="logout" onclick="logout()"></button>
   </div>
 
@@ -70,6 +83,7 @@ footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
 var SB_URL='https://ndwldtmkhxlgvvpeiuui.supabase.co';
 var SB_KEY='sb_publishable_IxOMKArEFDsrbDEbZwRRYA_rtv0CZ3Q';
 var sb=supabase.createClient(SB_URL,SB_KEY);
+var homeTab='mem',prof=null,members=[],lastId=null;
 var L=(navigator.language||'fr').slice(0,2)==='en'?'en':'fr',tab='up',user=null;
 var C=['Sénégal','Côte d’Ivoire','Cameroun','Mali','Guinée','Bénin','Togo','Burkina Faso','RD Congo','Congo','Gabon','Maroc','Algérie','Tunisie','Nigeria','Ghana','Kenya','France','Belgique','Suisse','Royaume-Uni','Allemagne','Canada','Autre'];
 var CE=['Senegal','Ivory Coast','Cameroon','Mali','Guinea','Benin','Togo','Burkina Faso','DR Congo','Congo','Gabon','Morocco','Algeria','Tunisia','Nigeria','Ghana','Kenya','France','Belgium','Switzerland','United Kingdom','Germany','Canada','Other'];
@@ -80,7 +94,7 @@ sendUp:'Créer mon compte',sendIn:'Me connecter',
 young:'Vous devez avoir 18 ans ou plus.',fill:'Remplissez tous les champs. Le mot de passe doit avoir 8 caractères minimum.',
 check:'Compte créé. Ouvrez votre boîte mail et appuyez sur le lien de confirmation, puis connectez-vous.',
 badLogin:'E-mail ou mot de passe incorrect, ou e-mail non confirmé.',err:'Une erreur est survenue. Réessayez dans un instant.',
-hello:'Bienvenue',hsub:'Votre compte est actif. Les profils et la messagerie arrivent bientôt.',out:'Se déconnecter',
+hello:'Bienvenue',complete:'Complétez votre profil pour découvrir les membres.',tMem:'Membres',tMe:'Mon profil',pName:'Prénom ou pseudo',pAge:'Âge',pCity:'Ville',pCountry:'Pays',pBio:'Présentation (300 caractères maximum)',pSave:'Enregistrer mon profil',psaved:'Profil enregistré.',pfill:'Indiquez un prénom et un âge entre 18 et 99.',none:'Aucun autre membre pour l’instant. Vous êtes parmi les premiers.',yrs:'ans',out:'Se déconnecter',
 foot:'Réservé aux adultes (18+). Vos données restent confidentielles.'},
 en:{t1:'Join LMA Chat',t2:'A serious, secure dating community from Africa to Europe.',up:'Create account',inn:'Log in',
 name:'First name or nickname',email:'Email address',pass:'Password (8 characters minimum)',birth:'Date of birth',country:'Country',
@@ -88,9 +102,11 @@ sendUp:'Create my account',sendIn:'Log in',
 young:'You must be 18 or older.',fill:'Fill in all fields. The password needs at least 8 characters.',
 check:'Account created. Open your inbox, tap the confirmation link, then log in.',
 badLogin:'Wrong email or password, or email not confirmed.',err:'Something went wrong. Please try again shortly.',
-hello:'Welcome',hsub:'Your account is active. Profiles and messaging are coming soon.',out:'Log out',
+hello:'Welcome',complete:'Complete your profile to discover members.',tMem:'Members',tMe:'My profile',pName:'First name or nickname',pAge:'Age',pCity:'City',pCountry:'Country',pBio:'About you (300 characters max)',pSave:'Save my profile',psaved:'Profile saved.',pfill:'Enter a name and an age between 18 and 99.',none:'No other members yet. You are among the first.',yrs:'years old',out:'Log out',
 foot:'Adults only (18+). Your data stays private.'}};
 function $(i){return document.getElementById(i)}
+function fillC(id,idx){var list=L==='fr'?C:CE,el=$(id);el.textContent='';list.forEach(function(c,i){var o=document.createElement('option');o.value=C[i];o.textContent=c;el.appendChild(o)});el.selectedIndex=idx}
+function pmsg(t,c){$('pmsg').textContent=t;$('pmsg').className='msg '+(c||'')}
 function msg(t,c){$('msg').textContent=t;$('msg').className='msg '+(c||'')}
 function render(){
   var d=T[L];document.documentElement.lang=L;
@@ -101,17 +117,63 @@ function render(){
   $('send').textContent=tab==='up'?d.sendUp:d.sendIn;
   $('logout').textContent=d.out;$('foot').textContent=d.foot;
   var cur=$('country').selectedIndex;if(cur<0)cur=0;
-  var list=L==='fr'?C:CE;$('country').textContent='';
-  list.forEach(function(c,i){var o=document.createElement('option');o.value=C[i];o.textContent=c;$('country').appendChild(o)});
-  $('country').selectedIndex=cur;
+  fillC('country',cur);
+  var cur2=$('pco').selectedIndex;if(cur2<0)cur2=0;fillC('pco',cur2);
   $('bfr').className=L==='fr'?'on':'';$('ben').className=L==='en'?'on':'';
   $('tabUp').className=tab==='up'?'on':'';$('tabIn').className=tab==='in'?'on':'';
   $('fName').className=tab==='up'?'':'hide';$('fUp').className=tab==='up'?'':'hide';
   $('pass').autocomplete=tab==='up'?'new-password':'current-password';
   var meta=user&&user.user_metadata||{};
   $('hello').textContent=d.hello+(meta.display_name?', '+meta.display_name:'')+' !';
-  $('hsub').textContent=d.hsub;
+  $('hsub').textContent=prof?'':d.complete;
+  $('tabMem').textContent=d.tMem;$('tabMe').textContent=d.tMe;
+  $('pName').textContent=d.pName;$('pAge').textContent=d.pAge;$('pCity').textContent=d.pCity;$('pCountry').textContent=d.pCountry;$('pBio').textContent=d.pBio;$('pSave').textContent=d.pSave;
+  $('tabMem').className=homeTab==='mem'?'on':'';$('tabMe').className=homeTab==='me'?'on':'';
+  $('secMe').className='card'+(homeTab==='me'?'':' hide');$('secMem').className=homeTab==='mem'?'':'hide';
+  renderList();
   $('viewAuth').className=user?'hide':'';$('viewHome').className=user?'':'hide';
+}
+function renderList(){
+  var d=T[L],box=$('list'),names=L==='fr'?C:CE;box.textContent='';
+  if(!members.length){var p=document.createElement('p');p.className='sub';p.textContent=d.none;box.appendChild(p);return}
+  members.forEach(function(m){
+    var c=document.createElement('div');c.className='m';
+    var b=document.createElement('b');b.textContent=m.display_name;c.appendChild(b);
+    var i=C.indexOf(m.country),pl=[m.city,i>=0?names[i]:m.country].filter(Boolean).join(', ');
+    var sp=document.createElement('span');sp.textContent=m.age+' '+d.yrs+(pl?' – '+pl:'');c.appendChild(sp);
+    if(m.bio){var p=document.createElement('p');p.textContent=m.bio;c.appendChild(p)}
+    box.appendChild(c);
+  });
+}
+function setHome(x){if(x==='mem'&&!prof){render();return}homeTab=x;pmsg('');render()}
+function fillForm(){
+  var meta=user&&user.user_metadata||{};
+  $('pn').value=prof?prof.display_name:(meta.display_name||'');
+  $('pa').value=prof?prof.age:'';$('pc').value=prof&&prof.city?prof.city:'';$('pb').value=prof&&prof.bio?prof.bio:'';
+  var co=prof?prof.country:meta.country,i=C.indexOf(co);if(i>=0)$('pco').selectedIndex=i;
+}
+async function loadMembers(){
+  var r=await sb.from('profiles').select('id,display_name,age,city,country,bio').neq('id',user.id).order('updated_at',{ascending:false}).limit(50);
+  members=r.data||[];
+}
+async function loadHome(){
+  try{
+    var r=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
+    prof=r.data||null;homeTab=prof?'mem':'me';fillForm();
+    if(prof)await loadMembers();
+  }catch(e){}
+  render();
+}
+async function saveP(){
+  var d=T[L],n=$('pn').value.trim(),a=parseInt($('pa').value,10);
+  if(!n||!(a>=18&&a<=99)){pmsg(d.pfill,'er');return}
+  $('pSave').disabled=true;
+  var row={id:user.id,display_name:n,age:a,city:$('pc').value.trim()||null,country:$('pco').value,bio:$('pb').value.trim()||null,updated_at:new Date().toISOString()};
+  try{
+    var r=await sb.from('profiles').upsert(row);
+    if(r.error){pmsg(d.err,'er')}else{prof=row;pmsg(d.psaved,'ok');await loadMembers();render()}
+  }catch(e){pmsg(d.err,'er')}
+  finally{$('pSave').disabled=false}
 }
 function setL(x){L=x;render()}
 function setTab(x){tab=x;msg('');render()}
@@ -137,8 +199,9 @@ async function submitF(){
   finally{$('send').disabled=false}
 }
 async function logout(){await sb.auth.signOut()}
-sb.auth.onAuthStateChange(function(ev,session){user=session?session.user:null;render()});
-sb.auth.getSession().then(function(r){user=r.data.session?r.data.session.user:null;render()});
+function setUser(u){user=u;var id=u?u.id:null;if(id!==lastId){lastId=id;prof=null;members=[];if(u)loadHome()}render()}
+sb.auth.onAuthStateChange(function(ev,session){setUser(session?session.user:null)});
+sb.auth.getSession().then(function(r){setUser(r.data.session?r.data.session.user:null)});
 render();
 </script>
 </body>
