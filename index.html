@@ -340,12 +340,12 @@ async function saveP(){
   finally{$('pSave').disabled=false}
 }
 function blocked(t){
-  var l=t.toLowerCase(),c=l.replace(/[^0-9a-z]/g,'');
-  if(/[0-9]{8,}/.test(c))return true;
-  if(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/.test(l))return true;
-  if(/https?:\/\/|www\.|\.(com|net|org|io)\b/.test(l))return true;
-  if(/\b(whats?app|watsap|whatsap|telegram|viber|wechat|snapchat|snap|insta|skype|instagram|facebook|tiktok|iban|paypal|western union|orange money|mtn money|moov money|mobile money|carte bancaire|carte bleue|carte virtuelle|visa|mastercard|bitcoin|crypto|cvv|num[eé]ro|t[eé]l[eé]phone|portable|phone number|call me|appelle[- ]moi)\b/.test(l))return true;
-  if(/(whatsapp|whatsap|watsap|telegram|snapchat|instagram|facebook|tiktok|westernunion|orangemoney|paypal|bitcoin|wechat|viber)/.test(l.replace(/[^a-z]/g,'')))return true;
+  var l=t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),c=l.replace(/[^0-9a-z]/g,'');
+  if(l.replace(/[^0-9]/g,'').length>=7||l.indexOf('@')>=0)return true;
+  if(/https?:\/\/|www\.|\.(com|net|org|io|me|co|app)\b/.test(l))return true;
+  if(/\b(num|nums|numero|numeros|telephone|tlf|tlfn|phone|portable|whatsapp|whatsap|watsap|wtsp|wsp|wa|zap|telegram|viber|wechat|snap|snapchat|insta|instagram|facebook|fb|tiktok|skype|mail|gmail|yahoo|hotmail|outlook|iban|paypal|western|momo|crypto|bitcoin|usdt|cvv|visa|mastercard|argent|money|virement|mandat|contact(e|er|ez|s)?)\b/.test(l))return true;
+  if((l.match(/\b(zero|un|deux|trois|quatre|cinq|six|sept|huit|neuf|one|two|three|four|five|seven|eight|nine)\b/g)||[]).length>=6)return true;
+  if(/(whatsapp|whatsap|watsap|telegram|snapchat|instagram|facebook|westernunion|orangemoney|mtnmoney|moovmoney|mobilemoney|paypal|bitcoin|wechat|viber|cartebancaire|cartebleue|cartevirtuelle|appellemoi|appelezmoi|callme|tonnum|tonnumero|tontel)/.test(c))return true;
   return false;
 }
 function mmsg(t,c){$('mmsg').textContent=t;$('mmsg').className='msg '+(c||'')}
