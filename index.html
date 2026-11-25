@@ -40,6 +40,7 @@ textarea{resize:vertical;font-family:inherit}
 h2{font-size:1.2rem;margin:14px 0 4px}
 .mh{display:flex;gap:12px;align-items:center}.av{width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--bd);color:var(--mut);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.3rem;flex:none}.av.big{width:96px;height:96px;font-size:2rem}.av.hide{display:none}.phrow{display:flex;gap:14px;align-items:center;margin-bottom:4px}.phrow button.out{margin-top:0}
 .lnk{background:none;border:0;color:var(--ac);padding:12px 0 0;font-size:.95rem;cursor:pointer;text-decoration:underline}
+.vbox{margin-top:18px;padding-top:6px;border-top:1px solid var(--bd)}.vcode{font-size:1.6rem;font-weight:800;letter-spacing:.08em;text-align:center;margin:10px 0;color:var(--ac)}.badge,.m .badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;background:var(--ac);color:#fff;font-size:.75rem;font-weight:600;vertical-align:middle}
 .chk{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:var(--tx);margin:16px 0 0}
 .chk input{width:auto;margin-top:3px;flex:none}
 .chk a{color:var(--ac)}
@@ -97,6 +98,19 @@ footer a{color:var(--mut)}
       <label id="pBio" for="pb"></label><textarea id="pb" maxlength="300" rows="4"></textarea>
       <button class="go" id="pSave" onclick="saveP()"></button>
       <div class="msg" id="pmsg" role="status"></div>
+      <div id="vBox" class="vbox hide">
+        <h2 id="vTitle"></h2>
+        <p class="rule" id="vText"></p>
+        <div id="vState" class="msg"></div>
+        <div id="vForm" class="hide">
+          <p id="vCode" class="vcode"></p>
+          <p class="rule" id="vHow"></p>
+          <input id="vfile" type="file" accept="image/jpeg,image/png,image/webp" capture="user" class="hide" onchange="sendVerif(this)">
+          <button class="go" id="vSend" type="button" onclick="document.getElementById('vfile').click()"></button>
+        </div>
+        <button class="out" id="vStart" type="button" onclick="startVerif()"></button>
+        <div class="msg" id="vmsg" role="status"></div>
+      </div>
     </div>
     <div id="secMem"><div id="list"></div></div>
     <div id="secMsg" class="hide">
@@ -129,6 +143,7 @@ footer a{color:var(--mut)}
 var SB_URL='https://ndwldtmkhxlgvvpeiuui.supabase.co';
 var SB_KEY='sb_publishable_IxOMKArEFDsrbDEbZwRRYA_rtv0CZ3Q';
 var sb=supabase.createClient(SB_URL,SB_KEY);
+var verif=null,vcode=null,verifiedIds={};
 var homeTab='mem',pendingPhoto=null,prof=null,members=[],lastId=null,chatWith=null,convs=[],thread=[],chan=null,blockedIds=[];
 var L=(navigator.language||'fr').slice(0,2)==='en'?'en':'fr',tab='up',user=null,recovery=false;
 var C=['Sénégal','Côte d’Ivoire','Cameroun','Mali','Guinée','Bénin','Togo','Burkina Faso','RD Congo','Congo','Gabon','Maroc','Algérie','Tunisie','Nigeria','Ghana','Kenya','France','Belgique','Suisse','Royaume-Uni','Allemagne','Canada','Autre'];
@@ -138,7 +153,7 @@ fr:{t1:'Rejoignez LMA Chat',t2:'Une communauté de rencontres sérieuse et sécu
 name:'Prénom ou pseudo',email:'Adresse e-mail',pass:'Mot de passe (8 caractères minimum)',birth:'Date de naissance',country:'Pays',
 sendUp:'Créer mon compte',sendIn:'Me connecter',
 young:'Vous devez avoir 18 ans ou plus.',fill:'Remplissez tous les champs. Le mot de passe doit avoir 8 caractères minimum.',
-termsA:'J’ai 18 ans ou plus et j’accepte les',termsB:'conditions d’utilisation et la politique de confidentialité',termsC:'.',needTerms:'Vous devez accepter les conditions d’utilisation pour créer un compte.',footLink:'Conditions et confidentialité',forgot:'Mot de passe oublié ?',forgotNeed:'Entrez d’abord votre adresse e-mail dans le champ ci-dessus.',forgotSent:'Si cette adresse existe, un e-mail pour changer le mot de passe vient d’être envoyé. Vérifiez aussi vos spams.',newTitle:'Nouveau mot de passe',newPass:'Nouveau mot de passe (8 caractères minimum)',newSave:'Enregistrer le mot de passe',newOk:'Mot de passe changé.',photoAdd:'Ajouter une photo',photoChange:'Changer ma photo',photoRule:'Photo de votre visage, nette, sans contenu sexuel ni violent. Les photos inappropriées sont supprimées et le compte peut être suspendu.',photoWait:'Envoi de la photo…',photoOk:'Photo enregistrée.',photoOk2:'Photo prête. Appuyez sur « Enregistrer mon profil ».',photoBad:'Choisissez une image JPG, PNG ou WebP.',
+termsA:'J’ai 18 ans ou plus et j’accepte les',termsB:'conditions d’utilisation et la politique de confidentialité',termsC:'.',needTerms:'Vous devez accepter les conditions d’utilisation pour créer un compte.',footLink:'Conditions et confidentialité',forgot:'Mot de passe oublié ?',vTitle:'Vérification du profil',vText:'Un profil vérifié reçoit le badge « Vérifié » et inspire plus confiance. Votre selfie reste privé : seul l’administrateur le voit, et il est supprimé après examen.',vHow:'Écrivez ce code sur une feuille, puis prenez-vous en selfie en tenant la feuille près de votre visage. Le visage et le code doivent être bien visibles.',vSend:'Prendre mon selfie',vStart:'Faire vérifier mon profil',vOk:'Profil vérifié ✓',vWait:'Demande en cours d’examen. Vous aurez le badge dès qu’elle est validée.',vNo:'Demande refusée. Vous pouvez réessayer avec un selfie net.',vSent:'Selfie envoyé. Il sera examiné rapidement.',vBadge:'✓ Vérifié',forgotNeed:'Entrez d’abord votre adresse e-mail dans le champ ci-dessus.',forgotSent:'Si cette adresse existe, un e-mail pour changer le mot de passe vient d’être envoyé. Vérifiez aussi vos spams.',newTitle:'Nouveau mot de passe',newPass:'Nouveau mot de passe (8 caractères minimum)',newSave:'Enregistrer le mot de passe',newOk:'Mot de passe changé.',photoAdd:'Ajouter une photo',photoChange:'Changer ma photo',photoRule:'Photo de votre visage, nette, sans contenu sexuel ni violent. Les photos inappropriées sont supprimées et le compte peut être suspendu.',photoWait:'Envoi de la photo…',photoOk:'Photo enregistrée.',photoOk2:'Photo prête. Appuyez sur « Enregistrer mon profil ».',photoBad:'Choisissez une image JPG, PNG ou WebP.',
 check:'Compte créé. Ouvrez votre boîte mail et appuyez sur le lien de confirmation, puis connectez-vous.',
 badLogin:'E-mail ou mot de passe incorrect, ou e-mail non confirmé.',err:'Une erreur est survenue. Réessayez dans un instant.',
 hello:'Bienvenue',complete:'Complétez votre profil pour découvrir les membres.',tMem:'Membres',tMe:'Mon profil',pName:'Prénom ou pseudo',pAge:'Âge',pCity:'Ville',pCountry:'Pays',pBio:'Présentation (300 caractères maximum)',pSave:'Enregistrer mon profil',psaved:'Profil enregistré.',pfill:'Indiquez un prénom et un âge entre 18 et 99.',none:'Aucun autre membre pour l’instant. Vous êtes parmi les premiers.',yrs:'ans',tMsg:'Messages',report:'Signaler',block:'Bloquer',confirmBlock:'Bloquer ce membre ? Vous ne verrez plus ses messages ni son profil.',rLbl:'Motif',rDet:'Détails (facultatif)',rSend:'Envoyer le signalement',reported:'Merci. Votre signalement a été envoyé.',rs:'Arnaque ou demande d’argent',rh:'Harcèlement ou insultes',rf:'Faux profil',rm:'Personne qui semble mineure',ro:'Autre',write:'Écrire',open:'Ouvrir',back:'Retour',mSend:'Envoyer',ph:'Votre message…',you:'Vous',noConv:'Aucune conversation. Écrivez à un membre depuis l’onglet Membres.',rule:'Pour votre sécurité : ne partagez jamais de numéro, de carte bancaire ni d’argent.',blocked:'Message refusé : il est interdit de partager des numéros de téléphone, des liens, des réseaux sociaux (WhatsApp, etc.) ou des informations bancaires.',out:'Se déconnecter',
@@ -147,7 +162,7 @@ en:{t1:'Join LMA Chat',t2:'A serious, secure dating community from Africa to Eur
 name:'First name or nickname',email:'Email address',pass:'Password (8 characters minimum)',birth:'Date of birth',country:'Country',
 sendUp:'Create my account',sendIn:'Log in',
 young:'You must be 18 or older.',fill:'Fill in all fields. The password needs at least 8 characters.',
-termsA:'I am 18 or older and I accept the',termsB:'terms of use and privacy policy',termsC:'.',needTerms:'You must accept the terms of use to create an account.',footLink:'Terms and privacy',forgot:'Forgot password?',forgotNeed:'First enter your email address in the field above.',forgotSent:'If this address exists, an email to change your password has just been sent. Also check your spam folder.',newTitle:'New password',newPass:'New password (8 characters minimum)',newSave:'Save password',newOk:'Password changed.',photoAdd:'Add a photo',photoChange:'Change my photo',photoRule:'A clear photo of your face, with no sexual or violent content. Inappropriate photos are removed and the account may be suspended.',photoWait:'Uploading photo…',photoOk:'Photo saved.',photoOk2:'Photo ready. Tap “Save my profile”.',photoBad:'Choose a JPG, PNG or WebP image.',
+termsA:'I am 18 or older and I accept the',termsB:'terms of use and privacy policy',termsC:'.',needTerms:'You must accept the terms of use to create an account.',footLink:'Terms and privacy',forgot:'Forgot password?',vTitle:'Profile verification',vText:'A verified profile gets the “Verified” badge and inspires more trust. Your selfie stays private: only the administrator sees it, and it is deleted after review.',vHow:'Write this code on a sheet of paper, then take a selfie holding the sheet next to your face. Your face and the code must be clearly visible.',vSend:'Take my selfie',vStart:'Verify my profile',vOk:'Profile verified ✓',vWait:'Request under review. You will get the badge once it is approved.',vNo:'Request declined. You can try again with a clear selfie.',vSent:'Selfie sent. It will be reviewed soon.',vBadge:'✓ Verified',forgotNeed:'First enter your email address in the field above.',forgotSent:'If this address exists, an email to change your password has just been sent. Also check your spam folder.',newTitle:'New password',newPass:'New password (8 characters minimum)',newSave:'Save password',newOk:'Password changed.',photoAdd:'Add a photo',photoChange:'Change my photo',photoRule:'A clear photo of your face, with no sexual or violent content. Inappropriate photos are removed and the account may be suspended.',photoWait:'Uploading photo…',photoOk:'Photo saved.',photoOk2:'Photo ready. Tap “Save my profile”.',photoBad:'Choose a JPG, PNG or WebP image.',
 check:'Account created. Open your inbox, tap the confirmation link, then log in.',
 badLogin:'Wrong email or password, or email not confirmed.',err:'Something went wrong. Please try again shortly.',
 hello:'Welcome',complete:'Complete your profile to discover members.',tMem:'Members',tMe:'My profile',pName:'First name or nickname',pAge:'Age',pCity:'City',pCountry:'Country',pBio:'About you (300 characters max)',pSave:'Save my profile',psaved:'Profile saved.',pfill:'Enter a name and an age between 18 and 99.',none:'No other members yet. You are among the first.',yrs:'years old',tMsg:'Messages',report:'Report',block:'Block',confirmBlock:'Block this member? You will no longer see their messages or profile.',rLbl:'Reason',rDet:'Details (optional)',rSend:'Send report',reported:'Thank you. Your report has been sent.',rs:'Scam or request for money',rh:'Harassment or insults',rf:'Fake profile',rm:'Person who seems underage',ro:'Other',write:'Message',open:'Open',back:'Back',mSend:'Send',ph:'Your message…',you:'You',noConv:'No conversations yet. Write to a member from the Members tab.',rule:'For your safety: never share a phone number, a bank card or money.',blocked:'Message refused: sharing phone numbers, links, social apps (WhatsApp, etc.) or banking details is not allowed.',out:'Log out',
@@ -179,7 +194,7 @@ function render(){
   $('hello').textContent=d.hello+(meta.display_name?', '+meta.display_name:'')+' !';
   $('hsub').textContent=prof?'':d.complete;
   $('tabMem').textContent=d.tMem;$('tabMe').textContent=d.tMe;
-  $('pName').textContent=d.pName;$('pAge').textContent=d.pAge;$('pCity').textContent=d.pCity;$('pCountry').textContent=d.pCountry;$('pBio').textContent=d.pBio;$('pSave').textContent=d.pSave;$('pPhotoBtn').textContent=(pendingPhoto||(prof&&prof.photo_url))?d.photoChange:d.photoAdd;$('pPhotoRule').textContent=d.photoRule;showPhoto();
+  $('pName').textContent=d.pName;$('pAge').textContent=d.pAge;$('pCity').textContent=d.pCity;$('pCountry').textContent=d.pCountry;$('pBio').textContent=d.pBio;$('pSave').textContent=d.pSave;$('pPhotoBtn').textContent=(pendingPhoto||(prof&&prof.photo_url))?d.photoChange:d.photoAdd;$('pPhotoRule').textContent=d.photoRule;showPhoto();renderVerif();
   $('tabMem').className=homeTab==='mem'?'on':'';$('tabMe').className=homeTab==='me'?'on':'';
   $('secMe').className='card'+(homeTab==='me'?'':' hide');$('secMem').className=homeTab==='mem'?'':'hide';
   renderList();renderMsg();
@@ -191,7 +206,7 @@ function renderList(){
   members.forEach(function(m){
     var c=document.createElement('div');c.className='m';
     var h=document.createElement('div');h.className='mh';h.appendChild(avEl(m));var tx=document.createElement('div');h.appendChild(tx);c.appendChild(h);
-    var b=document.createElement('b');b.textContent=m.display_name;tx.appendChild(b);
+    var b=document.createElement('b');b.textContent=m.display_name;tx.appendChild(b);if(verifiedIds[m.id]){var bg=document.createElement('span');bg.className='badge';bg.textContent=d.vBadge;b.appendChild(bg)}
     var i=C.indexOf(m.country),pl=[m.city,i>=0?names[i]:m.country].filter(Boolean).join(', ');
     var sp=document.createElement('span');sp.textContent=m.age+' '+d.yrs+(pl?' – '+pl:'');tx.appendChild(sp);
     if(m.bio){var p=document.createElement('p');p.textContent=m.bio;c.appendChild(p)}
@@ -219,11 +234,11 @@ function showPhoto(){
   else{im.removeAttribute('src');im.className='av big hide';ph.className='av big';ph.textContent=((prof&&prof.display_name)||'?').charAt(0).toUpperCase()}
 }
 function pathOf(u){var k='/avatars/',i=okPhoto(u)?u.indexOf(k):-1;return i>=0?u.slice(i+k.length):null}
-function resizeImg(file){
+function resizeImg(file,max){
   return new Promise(function(res,rej){
     var img=new Image(),u=URL.createObjectURL(file);
     img.onload=function(){
-      var m=640,sc=Math.min(1,m/Math.max(img.width,img.height)),w=Math.round(img.width*sc),h=Math.round(img.height*sc),cv=document.createElement('canvas');
+      var m=max||640,sc=Math.min(1,m/Math.max(img.width,img.height)),w=Math.round(img.width*sc),h=Math.round(img.height*sc),cv=document.createElement('canvas');
       cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(u);
       cv.toBlob(function(b){b?res(b):rej(new Error('blob'))},'image/jpeg',0.85);
     };
@@ -251,6 +266,45 @@ async function uploadPhoto(inp){
   }catch(e){pmsg(d.err,'er')}
   finally{$('pPhotoBtn').disabled=false}
 }
+function vmsg(t,c){$('vmsg').textContent=t;$('vmsg').className='msg '+(c||'')}
+function genCode(){var a=new Uint32Array(1);crypto.getRandomValues(a);return 'LMA-'+(1000+a[0]%9000)}
+async function loadVerified(){
+  try{
+    var r=await sb.from('verified_profiles').select('user_id').limit(1000);
+    verifiedIds={};(r.data||[]).forEach(function(x){verifiedIds[x.user_id]=1});
+    var q=await sb.from('verification_requests').select('status').order('created_at',{ascending:false}).limit(1);
+    verif=q.data&&q.data[0]?q.data[0].status:null;
+  }catch(e){}
+}
+function renderVerif(){
+  var d=T[L],box=$('vBox');
+  if(!prof||!user){box.className='vbox hide';return}
+  box.className='vbox';
+  $('vTitle').textContent=d.vTitle;$('vText').textContent=d.vText;$('vHow').textContent=d.vHow;$('vSend').textContent=d.vSend;$('vStart').textContent=d.vStart;
+  var st=verifiedIds[user.id]?'approved':verif;
+  $('vState').textContent=st==='approved'?d.vOk:st==='pending'?d.vWait:st==='rejected'?d.vNo:'';
+  $('vState').className='msg '+(st==='approved'?'ok':st==='rejected'?'er':'');
+  var can=st!=='approved'&&st!=='pending';
+  $('vStart').className=(can&&!vcode)?'out':'out hide';
+  $('vForm').className=(can&&vcode)?'':'hide';
+  $('vCode').textContent=vcode||'';
+}
+function startVerif(){vcode=genCode();vmsg('');render()}
+async function sendVerif(inp){
+  var d=T[L],f=inp.files&&inp.files[0];inp.value='';
+  if(!f||!vcode)return;
+  if(!/^image\/(jpeg|png|webp)$/.test(f.type)){vmsg(d.photoBad,'er');return}
+  $('vSend').disabled=true;vmsg(d.photoWait);
+  try{
+    var blob=await resizeImg(f,900),path=user.id+'/'+Date.now()+'.jpg';
+    var r=await sb.storage.from('selfies').upload(path,blob,{contentType:'image/jpeg'});
+    if(r.error){vmsg(d.err,'er');return}
+    var q=await sb.from('verification_requests').insert({code:vcode,selfie_path:path});
+    if(q.error){vmsg(d.err,'er');return}
+    verif='pending';vcode=null;render();vmsg(d.vSent,'ok');
+  }catch(e){vmsg(d.err,'er')}
+  finally{$('vSend').disabled=false}
+}
 async function loadMembers(){
   var r=await sb.from('profiles').select('id,display_name,age,city,country,bio,photo_url').neq('id',user.id).order('updated_at',{ascending:false}).limit(50);
   members=(r.data||[]).filter(function(m){return blockedIds.indexOf(m.id)<0});
@@ -259,7 +313,7 @@ async function loadHome(){
   try{
     var r=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
     prof=r.data||null;homeTab=prof?'mem':'me';fillForm();
-    if(prof){await loadBlocks();await loadMembers();await loadConvs();subscribe()}
+    if(prof){await loadBlocks();await loadVerified();await loadMembers();await loadConvs();subscribe()}
   }catch(e){}
   render();
 }
@@ -270,7 +324,7 @@ async function saveP(){
   var row={id:user.id,display_name:n,age:a,city:$('pc').value.trim()||null,country:$('pco').value,bio:$('pb').value.trim()||null,photo_url:pendingPhoto||(prof&&prof.photo_url)||null,updated_at:new Date().toISOString()};
   try{
     var r=await sb.from('profiles').upsert(row);
-    if(r.error){pmsg(d.err,'er')}else{prof=row;pendingPhoto=null;pmsg(d.psaved,'ok');await loadMembers();subscribe();render()}
+    if(r.error){pmsg(d.err,'er')}else{prof=row;pendingPhoto=null;pmsg(d.psaved,'ok');await loadVerified();await loadMembers();subscribe();render()}
   }catch(e){pmsg(d.err,'er')}
   finally{$('pSave').disabled=false}
 }
@@ -421,7 +475,7 @@ async function saveNewP(){
   finally{$('newSave').disabled=false}
 }
 async function logout(){await sb.auth.signOut()}
-function setUser(u){user=u;var id=u?u.id:null;if(id!==lastId){lastId=id;prof=null;members=[];if(!u){if(chan){sb.removeChannel(chan);chan=null}chatWith=null;convs=[];thread=[];blockedIds=[]}if(u)loadHome()}render()}
+function setUser(u){user=u;var id=u?u.id:null;if(id!==lastId){lastId=id;prof=null;members=[];if(!u){if(chan){sb.removeChannel(chan);chan=null}chatWith=null;convs=[];thread=[];blockedIds=[];verifiedIds={};verif=null;vcode=null}if(u)loadHome()}render()}
 sb.auth.onAuthStateChange(function(ev,session){if(ev==='PASSWORD_RECOVERY')recovery=true;setUser(session?session.user:null)});
 sb.auth.getSession().then(function(r){setUser(r.data.session?r.data.session.user:null)});
 render();
