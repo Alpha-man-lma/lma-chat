@@ -105,7 +105,7 @@ footer a{color:var(--mut)}
         <div id="vForm" class="hide">
           <p id="vCode" class="vcode"></p>
           <p class="rule" id="vHow"></p>
-          <input id="vfile" type="file" accept="image/jpeg,image/png,image/webp" capture="user" class="hide" onchange="sendVerif(this)">
+          <input id="vfile" type="file" accept="image/jpeg,image/png,image/webp" class="hide" onchange="sendVerif(this)">
           <button class="go" id="vSend" type="button" onclick="document.getElementById('vfile').click()"></button>
         </div>
         <button class="out" id="vStart" type="button" onclick="startVerif()"></button>
@@ -274,6 +274,7 @@ async function loadVerified(){
     verifiedIds={};(r.data||[]).forEach(function(x){verifiedIds[x.user_id]=1});
     var q=await sb.from('verification_requests').select('status').order('created_at',{ascending:false}).limit(1);
     verif=q.data&&q.data[0]?q.data[0].status:null;
+    try{vcode=localStorage.getItem('lma_vc_'+user.id)||vcode}catch(e){}
   }catch(e){}
 }
 function renderVerif(){
@@ -289,7 +290,7 @@ function renderVerif(){
   $('vForm').className=(can&&vcode)?'':'hide';
   $('vCode').textContent=vcode||'';
 }
-function startVerif(){vcode=genCode();vmsg('');render()}
+function startVerif(){vcode=genCode();try{localStorage.setItem('lma_vc_'+user.id,vcode)}catch(e){}vmsg('');render()}
 async function sendVerif(inp){
   var d=T[L],f=inp.files&&inp.files[0];inp.value='';
   if(!f||!vcode)return;
@@ -301,7 +302,7 @@ async function sendVerif(inp){
     if(r.error){vmsg(d.err,'er');return}
     var q=await sb.from('verification_requests').insert({code:vcode,selfie_path:path});
     if(q.error){vmsg(d.err,'er');return}
-    verif='pending';vcode=null;render();vmsg(d.vSent,'ok');
+    verif='pending';vcode=null;try{localStorage.removeItem('lma_vc_'+user.id)}catch(e){}render();vmsg(d.vSent,'ok');
   }catch(e){vmsg(d.err,'er')}
   finally{$('vSend').disabled=false}
 }
@@ -474,7 +475,7 @@ async function saveNewP(){
   }catch(e){nmsg(d.err,'er')}
   finally{$('newSave').disabled=false}
 }
-async function logout(){await sb.auth.signOut()}
+async function logout(){try{await Promise.race([sb.auth.signOut({scope:'local'}),new Promise(function(r){setTimeout(r,2500)})])}catch(e){}setUser(null)}
 function setUser(u){user=u;var id=u?u.id:null;if(id!==lastId){lastId=id;prof=null;members=[];if(!u){if(chan){sb.removeChannel(chan);chan=null}chatWith=null;convs=[];thread=[];blockedIds=[];verifiedIds={};verif=null;vcode=null}if(u)loadHome()}render()}
 sb.auth.onAuthStateChange(function(ev,session){if(ev==='PASSWORD_RECOVERY')recovery=true;setUser(session?session.user:null)});
 sb.auth.getSession().then(function(r){setUser(r.data.session?r.data.session.user:null)});
