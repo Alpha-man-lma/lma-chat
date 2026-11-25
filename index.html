@@ -38,7 +38,11 @@ textarea{resize:vertical;font-family:inherit}
 .theirs{align-self:flex-start;background:var(--card);border:1px solid var(--bd)}
 .rule{font-size:.85rem;color:var(--mut);margin:6px 0 0}
 h2{font-size:1.2rem;margin:14px 0 4px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:var(--tx);margin:16px 0 0}
+.chk input{width:auto;margin-top:3px;flex:none}
+.chk a{color:var(--ac)}
 footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
+footer a{color:var(--mut)}
 </style>
 </head>
 <body>
@@ -59,6 +63,7 @@ footer{margin-top:26px;color:var(--mut);font-size:.8rem;text-align:center}
       <div id="fUp">
         <label id="lBirth" for="birth"></label><input id="birth" type="date">
         <label id="lCountry" for="country"></label><select id="country"></select>
+        <label class="chk" for="terms"><input id="terms" type="checkbox"><span id="lTerms"></span></label>
       </div>
       <button class="go" id="send" onclick="submitF()"></button>
       <div class="msg" id="msg" role="status"></div>
@@ -118,6 +123,7 @@ fr:{t1:'Rejoignez LMA Chat',t2:'Une communauté de rencontres sérieuse et sécu
 name:'Prénom ou pseudo',email:'Adresse e-mail',pass:'Mot de passe (8 caractères minimum)',birth:'Date de naissance',country:'Pays',
 sendUp:'Créer mon compte',sendIn:'Me connecter',
 young:'Vous devez avoir 18 ans ou plus.',fill:'Remplissez tous les champs. Le mot de passe doit avoir 8 caractères minimum.',
+termsA:'J’ai 18 ans ou plus et j’accepte les',termsB:'conditions d’utilisation et la politique de confidentialité',termsC:'.',needTerms:'Vous devez accepter les conditions d’utilisation pour créer un compte.',footLink:'Conditions et confidentialité',
 check:'Compte créé. Ouvrez votre boîte mail et appuyez sur le lien de confirmation, puis connectez-vous.',
 badLogin:'E-mail ou mot de passe incorrect, ou e-mail non confirmé.',err:'Une erreur est survenue. Réessayez dans un instant.',
 hello:'Bienvenue',complete:'Complétez votre profil pour découvrir les membres.',tMem:'Membres',tMe:'Mon profil',pName:'Prénom ou pseudo',pAge:'Âge',pCity:'Ville',pCountry:'Pays',pBio:'Présentation (300 caractères maximum)',pSave:'Enregistrer mon profil',psaved:'Profil enregistré.',pfill:'Indiquez un prénom et un âge entre 18 et 99.',none:'Aucun autre membre pour l’instant. Vous êtes parmi les premiers.',yrs:'ans',tMsg:'Messages',report:'Signaler',block:'Bloquer',confirmBlock:'Bloquer ce membre ? Vous ne verrez plus ses messages ni son profil.',rLbl:'Motif',rDet:'Détails (facultatif)',rSend:'Envoyer le signalement',reported:'Merci. Votre signalement a été envoyé.',rs:'Arnaque ou demande d’argent',rh:'Harcèlement ou insultes',rf:'Faux profil',rm:'Personne qui semble mineure',ro:'Autre',write:'Écrire',open:'Ouvrir',back:'Retour',mSend:'Envoyer',ph:'Votre message…',you:'Vous',noConv:'Aucune conversation. Écrivez à un membre depuis l’onglet Membres.',rule:'Pour votre sécurité : ne partagez jamais de numéro, de carte bancaire ni d’argent.',blocked:'Message refusé : il est interdit de partager des numéros de téléphone, des liens, des réseaux sociaux (WhatsApp, etc.) ou des informations bancaires.',out:'Se déconnecter',
@@ -126,11 +132,14 @@ en:{t1:'Join LMA Chat',t2:'A serious, secure dating community from Africa to Eur
 name:'First name or nickname',email:'Email address',pass:'Password (8 characters minimum)',birth:'Date of birth',country:'Country',
 sendUp:'Create my account',sendIn:'Log in',
 young:'You must be 18 or older.',fill:'Fill in all fields. The password needs at least 8 characters.',
+termsA:'I am 18 or older and I accept the',termsB:'terms of use and privacy policy',termsC:'.',needTerms:'You must accept the terms of use to create an account.',footLink:'Terms and privacy',
 check:'Account created. Open your inbox, tap the confirmation link, then log in.',
 badLogin:'Wrong email or password, or email not confirmed.',err:'Something went wrong. Please try again shortly.',
 hello:'Welcome',complete:'Complete your profile to discover members.',tMem:'Members',tMe:'My profile',pName:'First name or nickname',pAge:'Age',pCity:'City',pCountry:'Country',pBio:'About you (300 characters max)',pSave:'Save my profile',psaved:'Profile saved.',pfill:'Enter a name and an age between 18 and 99.',none:'No other members yet. You are among the first.',yrs:'years old',tMsg:'Messages',report:'Report',block:'Block',confirmBlock:'Block this member? You will no longer see their messages or profile.',rLbl:'Reason',rDet:'Details (optional)',rSend:'Send report',reported:'Thank you. Your report has been sent.',rs:'Scam or request for money',rh:'Harassment or insults',rf:'Fake profile',rm:'Person who seems underage',ro:'Other',write:'Message',open:'Open',back:'Back',mSend:'Send',ph:'Your message…',you:'You',noConv:'No conversations yet. Write to a member from the Members tab.',rule:'For your safety: never share a phone number, a bank card or money.',blocked:'Message refused: sharing phone numbers, links, social apps (WhatsApp, etc.) or banking details is not allowed.',out:'Log out',
 foot:'Adults only (18+). Your data stays private.'}};
 function $(i){return document.getElementById(i)}
+function termsHref(){return 'conditions.html'+(L==='en'?'#en':'')}
+function mkLink(txt){var a=document.createElement('a');a.href=termsHref();a.target='_blank';a.rel='noopener';a.textContent=txt;return a}
 function fillC(id,idx){var list=L==='fr'?C:CE,el=$(id);el.textContent='';list.forEach(function(c,i){var o=document.createElement('option');o.value=C[i];o.textContent=c;el.appendChild(o)});el.selectedIndex=idx}
 function pmsg(t,c){$('pmsg').textContent=t;$('pmsg').className='msg '+(c||'')}
 function msg(t,c){$('msg').textContent=t;$('msg').className='msg '+(c||'')}
@@ -140,8 +149,10 @@ function render(){
   $('tabUp').textContent=d.up;$('tabIn').textContent=d.inn;
   $('lName').textContent=d.name;$('lEmail').textContent=d.email;$('lPass').textContent=d.pass;
   $('lBirth').textContent=d.birth;$('lCountry').textContent=d.country;
+  var lt=$('lTerms');lt.textContent='';lt.appendChild(document.createTextNode(d.termsA+' '));lt.appendChild(mkLink(d.termsB));lt.appendChild(document.createTextNode(d.termsC));
   $('send').textContent=tab==='up'?d.sendUp:d.sendIn;
-  $('logout').textContent=d.out;$('foot').textContent=d.foot;
+  $('logout').textContent=d.out;
+  var ft=$('foot');ft.textContent=d.foot;ft.appendChild(document.createElement('br'));ft.appendChild(mkLink(d.footLink));
   var cur=$('country').selectedIndex;if(cur<0)cur=0;
   fillC('country',cur);
   var cur2=$('pco').selectedIndex;if(cur2<0)cur2=0;fillC('pco',cur2);
@@ -314,7 +325,8 @@ async function submitF(){
       var nm=$('name').value.trim(),bd=$('birth').value;
       if(!nm||!bd){msg(d.fill,'er');return}
       if(isNaN(age(bd))||age(bd)<18){msg(d.young,'er');return}
-      var r=await sb.auth.signUp({email:em,password:pw,options:{data:{display_name:nm,country:$('country').value,lang:L,over_18:true}}});
+      if(!$('terms').checked){msg(d.needTerms,'er');return}
+      var r=await sb.auth.signUp({email:em,password:pw,options:{data:{display_name:nm,country:$('country').value,lang:L,over_18:true,terms_accepted:true}}});
       if(r.error){msg(d.err,'er');return}
       if(r.data.session){return}
       msg(d.check,'ok');
